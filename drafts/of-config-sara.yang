@@ -14,6 +14,16 @@ module of-config {
      configuring OpenFlow datapaths. It is part of the OF-CONFIG
      specification.";
 
+  revision 2016-01-09 {
+    description
+      "This version of this YANG Module is part of the OF-CONFIG
+       1.3 specification; please see the specification itself for
+       details.";
+
+    reference
+      "OF-CONFIG 1.3";
+  }
+
   revision 2014-06-01 {
     description
       "This version of this YANG Module is part of the OF-CONFIG
@@ -85,10 +95,8 @@ module of-config {
   typedef OFUpDownStateType {
 
     // XXX: Harmonize with ifAdminStatus and ietf-interface and make it boolean and inline?
-    type enumeration {
-      enum up;
-      enum down;
-    }
+    type boolean;
+    default "true";
     description
       "Type to specify state information for a port or a
        connection.";
@@ -545,7 +553,7 @@ module of-config {
 
           leaf admin-state {
             type OFUpDownStateType;
-            default 'up';
+            default 'true';
             description
               "The administrative state of the port.  If true, the port has been
                administratively brought down and SHOULD not be used by
@@ -1053,13 +1061,42 @@ module of-config {
            connection is established.";
 
         uses OFResourceType;
-
-        leaf certificate {
-          type string;
-          mandatory true;
-          description
-            "An X.509 certificate in DER format base64 encoded.";
-        }
+		case localPKI{
+				container node {
+					
+					leaf certificate {
+					type string;
+					mandatory true;
+					description
+					"An X.509 certificate in DER format base64 encoded.";
+					}
+				}
+			}
+		case DNSbasedPKI{
+				container node {
+					
+					leaf DNSTLSA {
+					type string;
+					mandatory true;
+					description
+					"The TLSA record of a local DNS server in Der format. According to RFC https://tools.ietf.org/html/rfc6698";
+					}
+					leaf certificate {
+					type string;
+					mandatory true;
+					description
+					"An X.509 certificate in DER format base64 encoded. This is the certificate of the component itself (switch, controlelr)";
+					}
+					leaf private-key {
+					type string;
+					mandatory true;
+					description
+					"The private key relates to the certificate";
+					}
+					
+					
+				}
+			}
       }
 
       list flow-table {
@@ -1535,7 +1572,7 @@ module of-config {
           }
           default failSecureMode;
           description
-            "This element indicates the the behavior of the OpenFlow Logical Switch
+            "This element indicates the behavior of the OpenFlow Logical Switch
              in case it loses contact with all OpenFlow Controllers.
              There are two alternative modes in such a case: fails
              secure mode and fail standalone mode as defined by the
@@ -1553,7 +1590,9 @@ module of-config {
             description
               "The list of OpenFlow Controllers that are assigned to the OpenFlow
                Logical Switch.  The switch MUST NOT connect to any
-               OpenFlow Controller that is not contained in this list.";
+               OpenFlow Controller that is not contained in this list. 
+			   If the authenticaton is external-certificate and based on DNSbasedPKI 
+			   then this list may be retreived from the DNS server";
 
             leaf id {
               type OFConfigIdType;
